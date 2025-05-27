@@ -258,31 +258,55 @@ class DiscordNotify:
             return False
 
         try:
-            title = "📊 GW2 Trading Post Alert"
-            color = 0x3498db  # Blue
+            # Group alerts by type
+            buy_alerts = [item for item in alert_items if item['trigger'] == 'buy']
+            sell_alerts = [item for item in alert_items if item['trigger'] == 'sell']
+
+            embeds = []
             
-            items_list = []
-            for item in alert_items:
-                if item['trigger'] == 'buy':
-                    items_list.append(f"- {item['name']}: Buy Price {format_price(item['price'])} > Threshold {format_price(item['threshold'])} (Qty: {item['quantity']})")
-                else:
-                    items_list.append(f"- {item['name']}: Sell Price {format_price(item['price'])} < Threshold {format_price(item['threshold'])} (Qty: {item['quantity']})")
-            
-            embed = {
-                "title": title,
-                "description": "Price alerts triggered:\n" + "\n".join(items_list),
-                "color": color,
-                "thumbnail": {"url": alert_items[0]['icon']},
-                "footer": {
-                    "text": "GW2 TP Alert",
-                    "icon_url": "https://wiki.guildwars2.com/images/thumb/d/df/Guild_Wars_2_logo.png/300px-Guild_Wars_2_logo.png"
-                },
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-            }
+            # Create embed for buy alerts (sell opportunities)
+            if buy_alerts:
+                items_list = "\n".join(
+                    f"• {item['name']} - {format_price(item['price'])} (Available: {item['quantity']})"
+                    for item in buy_alerts
+                )
+                
+                buy_embed = {
+                    "title": "💰 SELL Opportunity",
+                    "description": items_list,
+                    "color": 0x00ff00,  # Green
+                    "thumbnail": {"url": buy_alerts[0]['icon']},
+                    "footer": {
+                        "text": "GW2 TP Alert - Buy price above threshold",
+                        "icon_url": "https://wiki.guildwars2.com/images/thumb/d/df/Guild_Wars_2_logo.png/300px-Guild_Wars_2_logo.png"
+                    },
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                }
+                embeds.append(buy_embed)
+
+            # Create embed for sell alerts (buy opportunities)
+            if sell_alerts:
+                items_list = "\n".join(
+                    f"• {item['name']} - {format_price(item['price'])} (Available: {item['quantity']})"
+                    for item in sell_alerts
+                )
+                
+                sell_embed = {
+                    "title": "🛒 BUY Opportunity",
+                    "description": items_list,
+                    "color": 0xff9900,  # Orange
+                    "thumbnail": {"url": sell_alerts[0]['icon']},
+                    "footer": {
+                        "text": "GW2 TP Alert - Sell price below threshold",
+                        "icon_url": "https://wiki.guildwars2.com/images/thumb/d/df/Guild_Wars_2_logo.png/300px-Guild_Wars_2_logo.png"
+                    },
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                }
+                embeds.append(sell_embed)
 
             payload = {
                 "username": "GW2 TP Bot",
-                "embeds": [embed]
+                "embeds": embeds
             }
 
             headers = {
